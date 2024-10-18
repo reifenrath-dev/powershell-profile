@@ -1,9 +1,12 @@
 Set-Alias workday Power-History-Today
-Set-Alias workweek Power-History
-function Power-History-Today {
-    Power-History -DaysFromToday 1
+Set-Alias workweek Power-History-This-Week
+function Get-Power-History-Today {
+    Power-History -StartTime (Get-Date).Date
 }
-function Power-History {
+function Get-Power-History-This-Week {
+    Power-History -StartTime (Get-Date).Date.AddDays(1 - (Get-Date).Date.DayOfWeek.value__)
+}
+function Get-Power-History {
     [CmdletBinding()]
     param(
         [Parameter(
@@ -11,7 +14,7 @@ function Power-History {
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true
         )]
-        [int]       $DaysFromToday = 7,
+        [DateTime]  $StartTime = (Get-Date).Date,
  
         [int]       $MaxEvents = 9999
     )
@@ -19,92 +22,86 @@ function Power-History {
     BEGIN {}
  
     PROCESS {
-            try {
-                $Computer = $env:COMPUTERNAME.ToUpper()
-                $EventList = Get-WinEvent -ComputerName $Computer -FilterHashtable @{
-                    Logname = 'system'
-                    Id = '1074', '6008', '42', '4647', '4624', '27'
-                    StartTime = (Get-Date).AddDays(-$DaysFromToday)
-                } -MaxEvents $MaxEvents -ErrorAction Stop
+        try {
+            $Computer = $env:COMPUTERNAME.ToUpper()
+            $EventList = Get-WinEvent -ComputerName $Computer -FilterHashtable @{
+                Logname   = 'system'
+                Id        = '1074', '6008', '42', '4647', '4624', '27'
+                StartTime = $StartTime
+            } -MaxEvents $MaxEvents -ErrorAction Stop
 
-                foreach ($Event in $EventList) {
-                    if ($Event.Id -eq 1074) {
+            foreach ($Event in $EventList) {
+                switch ($Event.Id) {
+                    1074 {
                         [PSCustomObject]@{
                             TimeStamp = $Event.TimeCreated
-                            State = '-'
-                            Action = $Event.Properties.value[4]
+                            State     = '-'
+                            Action    = $Event.Properties.value[4]
                         }
                     }
-
-                    if ($Event.Id -eq 4647) {
-                        [PSCustomObject]@{
-                            TimeStamp    = $Event.TimeCreated
-                            State = '-'
-                            Action = 'logoff'
-                        }
-                    }
-
-                    if ($Event.Id -eq 4624) {
-                        [PSCustomObject]@{
-                            TimeStamp    = $Event.TimeCreated
-                            State = '+'
-                            Action = 'logon'
-                        }
-                    }
-
-                    if ($Event.Id -eq 27 -And $Event.Properties.value[0] -eq 2) {
-                        [PSCustomObject]@{
-                            TimeStamp    = $Event.TimeCreated
-                            State = '+'
-                            Action = 'wake'
-                        }
-                    }
-
-                    if ($Event.Id -eq 27 -And $Event.Properties.value[0] -eq 0) {
+                    4647 {
                         [PSCustomObject]@{
                             TimeStamp = $Event.TimeCreated
-                            State = '+'
-                            Action = 'boot'
+                            State     = '-'
+                            Action    = 'logoff'
                         }
                     }
-
-                    if ($Event.Id -eq 42) {
-                        [PSCustomObject]@{
-                            TimeStamp    = $Event.TimeCreated
-                            State = '-'
-                            Action = 'sleep'
-                        }
-                    }
-
-                    if ($Event.Id -eq 6008) {
+                    4624 {
                         [PSCustomObject]@{
                             TimeStamp = $Event.TimeCreated
-                            State = '-'
-                            Action = 'unexpected shutdown'
+                            State     = '+'
+                            Action    = 'logon'
                         }
                     }
- 
+                    { $_ -eq 27 -And $Event.Properties.value[0] -eq 2 } {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
+                            State     = '+'
+                            Action    = 'wake'
+                        }
+                    }
+                    { $_ -eq 27 -And $Event.Properties.value[0] -eq 0 } {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
+                            State     = '+'
+                            Action    = 'boot'
+                        }
+                    }
+                    42 {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
+                            State     = '-'
+                            Action    = 'sleep'
+                        }
+                    }
+                    6008 {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
+                            State     = '-'
+                            Action    = 'unexpected shutdown'
+                        }
+                    }
                 }
- 
-            } catch {
-                Write-Error $_.Exception.Message
             }
+        }
+        catch {
+            Write-Error $_.Exception.Message
+        }
     }
  
     END {}
 }
 function aliases {
-    Compare-Object (Get-Alias) (PowerShell -NoProfile {Get-Alias}) -Property Name |sort Name
+    Compare-Object (Get-Alias) (PowerShell -NoProfile { Get-Alias }) -Property Name | sort Name
 }
 function functions { Get-ChildItem function:\ }
 function Trust-Certs { dotnet dev-certs https --trust }
-function Clean-Solution { Get-ChildItem -inc bin,obj -rec | Remove-Item -rec -force }
+function Clean-Solution { Get-ChildItem -inc bin, obj -rec | Remove-Item -rec -force }
 function update-visual-studio
 (
-	[string]$path
-)
-{
-	Start-Process -FilePath $path -ArgumentList "updateall --quiet --force"
+    [string]$path
+) {
+    Start-Process -FilePath $path -ArgumentList "updateall --quiet --force"
 }
 
 # -----------
