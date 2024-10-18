@@ -1,10 +1,8 @@
-Set-Alias workday Power-History-Today
-Set-Alias workweek Power-History-This-Week
-function Get-Power-History-Today {
-    Power-History -StartTime (Get-Date).Date
+function today {
+    Get-Power-History -StartTime (Get-Date).Date
 }
-function Get-Power-History-This-Week {
-    Power-History -StartTime (Get-Date).Date.AddDays(1 - (Get-Date).Date.DayOfWeek.value__)
+function week {
+    Get-Power-History -StartTime (Get-Date).Date.AddDays(1 - (Get-Date).Date.DayOfWeek.value__)
 }
 function Get-Power-History {
     [CmdletBinding()]
