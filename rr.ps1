@@ -93,8 +93,8 @@ function aliases {
     Compare-Object (Get-Alias) (PowerShell -NoProfile { Get-Alias }) -Property Name | sort Name
 }
 function functions { Get-ChildItem function:\ }
-function Trust-Certs { dotnet dev-certs https --trust }
-function Clean-Solution { Get-ChildItem -inc bin, obj -rec | Remove-Item -rec -force }
+function trust-certs { dotnet dev-certs https --trust }
+function clean-solution { Get-ChildItem -inc bin, obj -rec | Remove-Item -rec -force }
 function update-visual-studio
 (
     [string]$path
