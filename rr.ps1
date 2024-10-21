@@ -1,3 +1,20 @@
+function test-command-exists {
+    param ($command)
+    $oldPreference = $ErrorActionPreference
+    $ErrorActionPreference = ‘stop’
+    try {
+        if (Get-Command $command) {
+            return $true
+        }
+    }
+    catch {
+        Write-Host “$command does not exist”; return $false
+    }
+    finally {
+        $ErrorActionPreference = $oldPreference
+    }
+}
+
 Set-Alias workday Power-History-Today
 Set-Alias workweek Power-History-This-Week
 function Get-Power-History-Today {
@@ -142,5 +159,5 @@ function pgrep($name) {
 # END: Aliases & Functions from https://github.com/ChrisTitusTech/powershell-profile
 # -----------
 
-Invoke-Expression (&starship init powershell)
-Invoke-Expression (& { (zoxide init powershell | Out-String) })
+if(test-command-exists starship) { Invoke-Expression (&starship init powershell) }
+if(test-command-exists zoxide) { Invoke-Expression (& { (zoxide init powershell | Out-String) }) }
