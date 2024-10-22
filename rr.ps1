@@ -1,7 +1,7 @@
 function test-command-exists {
     param ($command)
     $oldPreference = $ErrorActionPreference
-    $ErrorActionPreference = ‘stop’
+    $ErrorActionPreference = 'stop'
     try {
         if (Get-Command $command) {
             return $true
@@ -47,6 +47,8 @@ function Get-Power-History {
 
             foreach ($Event in $EventList) {
                 switch ($Event.Id) {
+                    # Source: User32
+                    # Shutdown type is logged as string in param5/Properties.value[4]
                     1074 {
                         [PSCustomObject]@{
                             TimeStamp = $Event.TimeCreated
@@ -54,27 +56,8 @@ function Get-Power-History {
                             Action    = $Event.Properties.value[4]
                         }
                     }
-                    4647 {
-                        [PSCustomObject]@{
-                            TimeStamp = $Event.TimeCreated
-                            State     = '-'
-                            Action    = 'logoff'
-                        }
-                    }
-                    4624 {
-                        [PSCustomObject]@{
-                            TimeStamp = $Event.TimeCreated
-                            State     = '+'
-                            Action    = 'logon'
-                        }
-                    }
-                    { $_ -eq 27 -And $Event.Properties.value[0] -eq 2 } {
-                        [PSCustomObject]@{
-                            TimeStamp = $Event.TimeCreated
-                            State     = '+'
-                            Action    = 'wake'
-                        }
-                    }
+                    # Source: Kernel-Boot
+                    # Boot-Type: Cold Boot from Full Shutdown
                     { $_ -eq 27 -And $Event.Properties.value[0] -eq 0 } {
                         [PSCustomObject]@{
                             TimeStamp = $Event.TimeCreated
@@ -82,6 +65,26 @@ function Get-Power-History {
                             Action    = 'boot'
                         }
                     }
+                    # Source: Kernel-Boot
+                    # Boot-Type: Fast Startup / Hybrid Boot
+                    { $_ -eq 27 -And $Event.Properties.value[0] -eq 1 } {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
+                            State     = '+'
+                            Action    = 'fast startup'
+                        }
+                    }
+                    # Source: Kernel-Boot
+                    # Boot-Type: Resume from Hibernation
+                    { $_ -eq 27 -And $Event.Properties.value[0] -eq 2 } {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
+                            State     = '+'
+                            Action    = 'wake'
+                        }
+                    }
+                    # Source: Kernel-Power
+                    # The system is entering sleep
                     42 {
                         [PSCustomObject]@{
                             TimeStamp = $Event.TimeCreated
@@ -89,11 +92,29 @@ function Get-Power-History {
                             Action    = 'sleep'
                         }
                     }
+                    # Source: EventLog
+                    # The previous system shutdown was unexpected
                     6008 {
                         [PSCustomObject]@{
                             TimeStamp = $Event.TimeCreated
+                            State     = '+'
+                            Action    = 'startup after unexpected shutdown'
+                        }
+                    }
+                    # A user successfully logged on to a computer
+                    4624 {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
+                            State     = '+'
+                            Action    = 'logon'
+                        }
+                    }
+                    # A user initiated the logoff process
+                    4647 {
+                        [PSCustomObject]@{
+                            TimeStamp = $Event.TimeCreated
                             State     = '-'
-                            Action    = 'unexpected shutdown'
+                            Action    = 'logoff'
                         }
                     }
                 }
