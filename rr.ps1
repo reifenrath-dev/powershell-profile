@@ -48,6 +48,7 @@ function Get-Power-History {
             foreach ($Event in $EventList) {
                 switch ($Event.Id) {
                     # Source: User32
+                    # User initiated a shutdown
                     # Shutdown type is logged as string in param5/Properties.value[4]
                     1074 {
                         [PSCustomObject]@{
