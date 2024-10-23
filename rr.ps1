@@ -128,6 +128,18 @@ function Get-Power-History {
  
     END {}
 }
+# Finds duplicated files in the current directory and sub-directories using their hashes.
+# More info here: https://stackoverflow.com/a/58677703
+function find-duplicates {
+    Get-ChildItem -Recurse -File `
+    | Group-Object -Property Length `
+    | Where-Object{ $_.Count -gt 1 } `
+    | ForEach-Object{ $_.Group } `
+    | Get-FileHash `
+    | Group-Object -Property Hash `
+    | Where-Object{ $_.Count -gt 1 } `
+    | ForEach-Object{ $_.Group }
+}
 function aliases {
     Compare-Object (Get-Alias) (PowerShell -NoProfile { Get-Alias }) -Property Name | sort Name
 }
