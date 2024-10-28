@@ -14,6 +14,22 @@ function test-command-exists($command) {
     }
 }
 
+function test-command-exists-silent($command) {
+    $exists = $null -ne (Get-Command $command -ErrorAction SilentlyContinue)
+    return $exists
+}
+
+$EDITOR = if (test-command-exists-silent vscodium) { 'vscodium' }
+          elseif (test-command-exists-silent code) { 'code' }
+          elseif (test-command-exists-silent notepad++) { 'notepad++' }
+          else { 'notepad' }
+Set-Alias edit $EDITOR
+
+function reload-profile {
+    & $profile
+}
+Set-Alias reload reload-profile
+
 function today {
     Get-Power-History -StartTime (Get-Date).Date
 }
